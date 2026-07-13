@@ -348,9 +348,12 @@
             gameState.score = Math.floor(currentHeight / 10);
             gameState.maxHeight = Math.max(gameState.maxHeight, -gameState.cameraY);
 
-            // Game over if player falls
-            if (p.y > gameState.cameraY + canvas.height) {
-                gameState.gameOver = true;
+            // Game over if player falls too far below lowest platform
+            if (gameState.platforms.length > 0) {
+                const lowestPlatform = Math.max(...gameState.platforms.map(plat => plat.y));
+                if (p.y > lowestPlatform + 150 && p.vy > 0) {
+                    gameState.gameOver = true;
+                }
             }
         }
 
