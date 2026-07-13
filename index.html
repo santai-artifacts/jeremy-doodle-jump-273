@@ -204,6 +204,22 @@
             }
         }
 
+        // Generate clouds
+        function generateClouds() {
+            const clouds = [];
+            for (let i = 0; i < 20; i++) {
+                clouds.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * 6000 - 3000,
+                    width: 80 + Math.random() * 60,
+                    opacity: 0.6 + Math.random() * 0.3
+                });
+            }
+            return clouds;
+        }
+
+        gameState.clouds = generateClouds();
+
         function startGame() {
             gameState.score = 0;
             gameState.gameOver = false;
@@ -362,12 +378,37 @@
             }
         }
 
+        function drawCloud(x, y, width) {
+            const height = width * 0.5;
+            ctx.beginPath();
+            ctx.ellipse(x, y, width * 0.5, height * 0.4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x - width * 0.25, y, width * 0.35, height * 0.35, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x + width * 0.25, y, width * 0.35, height * 0.35, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
         function drawGame() {
-            ctx.fillStyle = 'skyblue';
+            // Draw gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87ceeb');
+            gradient.addColorStop(1, '#e0f6ff');
+            ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             ctx.save();
             ctx.translate(0, -gameState.cameraY);
+
+            // Draw clouds
+            ctx.fillStyle = 'white';
+            for (let cloud of gameState.clouds) {
+                ctx.globalAlpha = cloud.opacity;
+                drawCloud(cloud.x, cloud.y, cloud.width);
+            }
+            ctx.globalAlpha = 1;
 
             // Draw platforms
             for (let platform of gameState.platforms) {
