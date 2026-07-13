@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doodle Jump</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background: linear-gradient(180deg, #87ceeb 0%, #e0f6ff 100%);
+            border: 4px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        canvas {
+            display: block;
+            background: inherit;
+            cursor: none;
+        }
+
+        #uiLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 10px 20px;
+            color: #333;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            font-size: 20px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 20;
+            gap: 20px;
+        }
+
+        #gameOverScreen h1 {
+            color: white;
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        #finalScore {
+            color: #ffd700;
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        #restartBtn {
+            padding: 12px 24px;
+            font-size: 18px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        #restartBtn:hover {
+            background: #45a049;
+        }
+
+        .instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+            max-width: 300px;
+        }
+
+        .instructions.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .instructions h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .instructions p {
+            color: #666;
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div id="uiLayer">
+            <div>Score: <span id="scoreDisplay">0</span></div>
+            <div>High: <span id="highScoreDisplay">0</span></div>
+        </div>
+        <div id="gameOverScreen">
+            <h1>Game Over!</h1>
+            <div id="finalScore">Score: 0</div>
+            <button id="restartBtn">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game constants
+        const GRAVITY = 0.4;
+        const JUMP_STRENGTH = 12;
+        const PLAYER_WIDTH = 30;
+        const PLAYER_HEIGHT = 35;
+        const PLATFORM_WIDTH = 60;
+        const PLATFORM_HEIGHT = 12;
+
+        // Game state
+        let gameState = {
+            player: {
+                x: canvas.width / 2 - PLAYER_WIDTH / 2,
+                y: canvas.height - 100,
+                vx: 0,
+                vy: 0,
+                width: PLAYER_WIDTH,
+                height: PLAYER_HEIGHT
+            },
+            platforms: [],
+            enemies: [],
+            score: 0,
+            highScore: localStorage.getItem('doodleJumpHighScore') || 0,
+            gameOver: false,
+            cameraY: 0,
+            maxHeight: 0
+        };
+
+        // Initialize platforms
+        function initPlatforms() {
+            gameState.platforms = [];
+            for (let i = 0; i < 8; i++) {
+                gameState.platforms.push({
+                    x: Math.random() * (canvas.width - PLATFORM_WIDTH),
+                    y: i * 75,
+                    width: PLATFORM_WIDTH,
+                    height: PLATFORM_HEIGHT,
+                    type: Math.random() > 0.85 ? 'spring' : 'normal'
+                });
+            }
+        }
+
+        // Initialize enemies
+        function initEnemies() {
+            gameState.enemies = [];
+            for (let i = 2; i < 8; i++) {
+                if (Math.random() > 0.6) {
+                    gameState.enemies.push({
+                        x: Math.random() * (canvas.width - 30),
+                        y: i * 75 + 30,
+                        width: 30,
+                        height: 30,
+                        vx: Math.random() > 0.5 ? 2 : -2
+                    });
+                }
+            }
+        }
+
+        function startGame() {
+            gameState.player = {
+                x: canvas.width / 2 - PLAYER_WIDTH / 2,
+                y: canvas.height - 100,
+                vx: 0,
+                vy: 0,
+                width: PLAYER_WIDTH,
+                height: PLAYER_HEIGHT
+            };
+            gameState.score = 0;
+            gameState.gameOver = false;
+            gameState.cameraY = 0;
+            gameState.maxHeight = 0;
+            initPlatforms();
+            initEnemies();
+            document.getElementById('gameOverScreen').style.display = 'none';
+            gameLoop();
+        }
+
+        // Input handling
+        const keys = {};
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Mouse/touch movement
+        document.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+
+            if (mouseX < canvas.width / 3) {
+                gameState.player.vx = -5;
+            } else if (mouseX > (2 * canvas.width) / 3) {
+                gameState.player.vx = 5;
+            } else {
+                gameState.player.vx *= 0.8;
+            }
+        });
+
+        // Touch for mobile
+        document.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const touchX = touch.clientX - rect.left;
+
+            if (touchX < canvas.width / 3) {
+                gameState.player.vx = -5;
+            } else if (touchX > (2 * canvas.width) / 3) {
+                gameState.player.vx = 5;
+            } else {
+                gameState.player.vx *= 0.8;
+            }
+            e.preventDefault();
+        }, false);
+
+        function updateGame() {
+            if (gameState.gameOver) return;
+
+            const p = gameState.player;
+
+            // Keyboard input
+            if (keys['ArrowLeft']) p.vx = -5;
+            if (keys['ArrowRight']) p.vx = 5;
+
+            // Gravity
+            p.vy += GRAVITY;
+            p.y += p.vy;
+            p.x += p.vx;
+
+            // Friction
+            p.vx *= 0.95;
+
+            // Wrap around screen
+            if (p.x < 0) p.x = canvas.width;
+            if (p.x + p.width > canvas.width) p.x = -p.width;
+
+            // Generate new platforms as player moves up
+            const highestPlatform = Math.min(...gameState.platforms.map(p => p.y));
+            if (highestPlatform > gameState.cameraY + 100) {
+                gameState.platforms.push({
+                    x: Math.random() * (canvas.width - PLATFORM_WIDTH),
+                    y: highestPlatform - 75,
+                    width: PLATFORM_WIDTH,
+                    height: PLATFORM_HEIGHT,
+                    type: Math.random() > 0.85 ? 'spring' : 'normal'
+                });
+
+                if (Math.random() > 0.7) {
+                    gameState.enemies.push({
+                        x: Math.random() * (canvas.width - 30),
+                        y: highestPlatform - 75 + 30,
+                        width: 30,
+                        height: 30,
+                        vx: Math.random() > 0.5 ? 2 : -2
+                    });
+                }
+            }
+
+            // Remove old platforms and enemies
+            gameState.platforms = gameState.platforms.filter(plat => plat.y < gameState.cameraY + 700);
+            gameState.enemies = gameState.enemies.filter(enemy => enemy.y < gameState.cameraY + 700);
+
+            // Platform collision
+            for (let platform of gameState.platforms) {
+                if (p.vy > 0 &&
+                    p.y + p.height >= platform.y &&
+                    p.y + p.height <= platform.y + platform.height + 10 &&
+                    p.x + p.width > platform.x &&
+                    p.x < platform.x + platform.width) {
+
+                    p.vy = -JUMP_STRENGTH;
+                    if (platform.type === 'spring') {
+                        p.vy = -JUMP_STRENGTH * 1.5;
+                    }
+                }
+            }
+
+            // Enemy collision
+            for (let enemy of gameState.enemies) {
+                enemy.x += enemy.vx;
+                if (enemy.x < 0 || enemy.x + enemy.width > canvas.width) {
+                    enemy.vx *= -1;
+                }
+
+                if (p.x + p.width > enemy.x &&
+                    p.x < enemy.x + enemy.width &&
+                    p.y + p.height > enemy.y &&
+                    p.y < enemy.y + enemy.height) {
+                    gameState.gameOver = true;
+                }
+            }
+
+            // Update camera
+            gameState.cameraY = p.y - canvas.height / 3;
+            if (gameState.cameraY < 0) gameState.cameraY = 0;
+
+            // Update score
+            const currentHeight = Math.max(gameState.maxHeight, -gameState.cameraY);
+            gameState.score = Math.floor(currentHeight / 10);
+            gameState.maxHeight = Math.max(gameState.maxHeight, -gameState.cameraY);
+
+            // Game over if player falls
+            if (p.y > gameState.cameraY + canvas.height) {
+                gameState.gameOver = true;
+            }
+        }
+
+        function drawGame() {
+            ctx.fillStyle = 'skyblue';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.translate(0, -gameState.cameraY);
+
+            // Draw platforms
+            for (let platform of gameState.platforms) {
+                if (platform.type === 'spring') {
+                    ctx.fillStyle = '#ff6b6b';
+                } else {
+                    ctx.fillStyle = '#4CAF50';
+                }
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(platform.x, platform.y, platform.width, platform.height);
+            }
+
+            // Draw enemies
+            for (let enemy of gameState.enemies) {
+                ctx.fillStyle = '#ff6b6b';
+                ctx.beginPath();
+                ctx.arc(enemy.x + 15, enemy.y + 15, 15, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eyes
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(enemy.x + 10, enemy.y + 12, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(enemy.x + 20, enemy.y + 12, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.arc(enemy.x + 10, enemy.y + 12, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(enemy.x + 20, enemy.y + 12, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Draw player
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(gameState.player.x + PLAYER_WIDTH / 2, gameState.player.y + PLAYER_HEIGHT / 2, PLAYER_WIDTH / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(gameState.player.x + 12, gameState.player.y + 12, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(gameState.player.x + 18, gameState.player.y + 12, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+
+            // Draw UI
+            document.getElementById('scoreDisplay').textContent = gameState.score;
+            document.getElementById('highScoreDisplay').textContent = gameState.highScore;
+        }
+
+        function showGameOver() {
+            if (gameState.score > gameState.highScore) {
+                gameState.highScore = gameState.score;
+                localStorage.setItem('doodleJumpHighScore', gameState.highScore);
+            }
+
+            const gameOverScreen = document.getElementById('gameOverScreen');
+            document.getElementById('finalScore').textContent = `Score: ${gameState.score}`;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        function gameLoop() {
+            updateGame();
+            drawGame();
+
+            if (gameState.gameOver) {
+                showGameOver();
+                return;
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Event listeners
+        document.getElementById('restartBtn').addEventListener('click', startGame);
+
+        // Start the game
+        startGame();
+    </script>
+</body>
+</html>
