@@ -265,12 +265,14 @@
             gameState.mouseX = Math.max(0, Math.min(mouseX, canvas.width));
             gameState.mouseY = Math.max(0, Math.min(mouseY, canvas.height));
 
-            if (mouseX < canvas.width / 3) {
-                gameState.player.vx = -5;
-            } else if (mouseX > (2 * canvas.width) / 3) {
-                gameState.player.vx = 5;
+            // Move player directly towards mouse
+            const playerCenterX = gameState.player.x + PLAYER_WIDTH / 2;
+            const dx = mouseX - playerCenterX;
+
+            if (Math.abs(dx) > 5) {
+                gameState.player.vx = Math.sign(dx) * 8;
             } else {
-                gameState.player.vx *= 0.8;
+                gameState.player.vx *= 0.7;
             }
         });
 
@@ -280,12 +282,13 @@
             const rect = canvas.getBoundingClientRect();
             const touchX = touch.clientX - rect.left;
 
-            if (touchX < canvas.width / 3) {
-                gameState.player.vx = -5;
-            } else if (touchX > (2 * canvas.width) / 3) {
-                gameState.player.vx = 5;
+            const playerCenterX = gameState.player.x + PLAYER_WIDTH / 2;
+            const dx = touchX - playerCenterX;
+
+            if (Math.abs(dx) > 5) {
+                gameState.player.vx = Math.sign(dx) * 8;
             } else {
-                gameState.player.vx *= 0.8;
+                gameState.player.vx *= 0.7;
             }
             e.preventDefault();
         }, false);
