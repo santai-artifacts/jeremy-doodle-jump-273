@@ -345,9 +345,8 @@
                 }
             }
 
-            // Update camera
+            // Update camera to follow player
             gameState.cameraY = p.y - canvas.height / 3;
-            if (gameState.cameraY < 0) gameState.cameraY = 0;
 
             // Update score
             const currentHeight = Math.max(gameState.maxHeight, -gameState.cameraY);
