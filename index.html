@@ -205,20 +205,26 @@
         }
 
         function startGame() {
-            gameState.player = {
-                x: canvas.width / 2 - PLAYER_WIDTH / 2,
-                y: canvas.height - 100,
-                vx: 0,
-                vy: 0,
-                width: PLAYER_WIDTH,
-                height: PLAYER_HEIGHT
-            };
             gameState.score = 0;
             gameState.gameOver = false;
             gameState.cameraY = 0;
             gameState.maxHeight = 0;
             initPlatforms();
             initEnemies();
+
+            // Place player on the lowest platform
+            const lowestPlatform = gameState.platforms.reduce((lowest, platform) =>
+                platform.y > lowest.y ? platform : lowest
+            );
+            gameState.player = {
+                x: lowestPlatform.x + lowestPlatform.width / 2 - PLAYER_WIDTH / 2,
+                y: lowestPlatform.y - PLAYER_HEIGHT - 5,
+                vx: 0,
+                vy: 0,
+                width: PLAYER_WIDTH,
+                height: PLAYER_HEIGHT
+            };
+
             document.getElementById('gameOverScreen').style.display = 'none';
             gameLoop();
         }
