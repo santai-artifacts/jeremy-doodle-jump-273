@@ -194,7 +194,7 @@
         function initEnemies() {
             gameState.enemies = [];
             for (let i = 2; i < 8; i++) {
-                if (Math.random() > 0.6) {
+                if (Math.random() > 0.95) {
                     gameState.enemies.push({
                         x: Math.random() * (canvas.width - 30),
                         y: i * 75 + 30,
@@ -256,42 +256,6 @@
             keys[e.key] = false;
         });
 
-        // Mouse/touch movement
-        document.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-
-            gameState.mouseX = Math.max(0, Math.min(mouseX, canvas.width));
-            gameState.mouseY = Math.max(0, Math.min(mouseY, canvas.height));
-
-            // Move player directly towards mouse
-            const playerCenterX = gameState.player.x + PLAYER_WIDTH / 2;
-            const dx = mouseX - playerCenterX;
-
-            if (Math.abs(dx) > 5) {
-                gameState.player.vx = Math.sign(dx) * 8;
-            } else {
-                gameState.player.vx *= 0.7;
-            }
-        });
-
-        // Touch for mobile
-        document.addEventListener('touchmove', (e) => {
-            const touch = e.touches[0];
-            const rect = canvas.getBoundingClientRect();
-            const touchX = touch.clientX - rect.left;
-
-            const playerCenterX = gameState.player.x + PLAYER_WIDTH / 2;
-            const dx = touchX - playerCenterX;
-
-            if (Math.abs(dx) > 5) {
-                gameState.player.vx = Math.sign(dx) * 8;
-            } else {
-                gameState.player.vx *= 0.7;
-            }
-            e.preventDefault();
-        }, false);
 
         function updateGame() {
             if (gameState.gameOver) return;
@@ -325,7 +289,7 @@
                     type: Math.random() > 0.85 ? 'spring' : 'normal'
                 });
 
-                if (Math.random() > 0.7) {
+                if (Math.random() > 0.95) {
                     gameState.enemies.push({
                         x: Math.random() * (canvas.width - 30),
                         y: highestPlatform - 75 + 30,
@@ -400,36 +364,6 @@
             ctx.fill();
         }
 
-        function drawMouseCursor() {
-            const x = gameState.mouseX;
-            const y = gameState.mouseY;
-
-            // Outer circle
-            ctx.fillStyle = '#FF1493';
-            ctx.beginPath();
-            ctx.arc(x, y, 8, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Inner circle
-            ctx.fillStyle = '#FFFFFF';
-            ctx.beginPath();
-            ctx.arc(x, y, 4, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Crosshair lines
-            ctx.strokeStyle = '#FF1493';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(x - 12, y);
-            ctx.lineTo(x - 8, y);
-            ctx.moveTo(x + 8, y);
-            ctx.lineTo(x + 12, y);
-            ctx.moveTo(x, y - 12);
-            ctx.lineTo(x, y - 8);
-            ctx.moveTo(x, y + 8);
-            ctx.lineTo(x, y + 12);
-            ctx.stroke();
-        }
 
         function drawGame() {
             // Draw gradient background
@@ -504,9 +438,6 @@
             ctx.fill();
 
             ctx.restore();
-
-            // Draw mouse cursor on top
-            drawMouseCursor();
 
             // Draw UI
             document.getElementById('scoreDisplay').textContent = gameState.score;
