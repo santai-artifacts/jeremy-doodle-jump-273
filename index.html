@@ -171,9 +171,7 @@
             highScore: localStorage.getItem('doodleJumpHighScore') || 0,
             gameOver: false,
             cameraY: 0,
-            maxHeight: 0,
-            mouseX: canvas.width / 2,
-            mouseY: canvas.height / 2
+            maxHeight: 0
         };
 
         // Initialize platforms
@@ -260,19 +258,11 @@
         document.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-
-            gameState.mouseX = Math.max(0, Math.min(mouseX, canvas.width));
-            gameState.mouseY = Math.max(0, Math.min(mouseY, canvas.height));
-
-            // Move player directly towards mouse
-            const playerCenterX = gameState.player.x + PLAYER_WIDTH / 2;
-            const dx = mouseX - playerCenterX;
-
-            if (Math.abs(dx) > 5) {
-                gameState.player.vx = Math.sign(dx) * 8;
-            } else {
-                gameState.player.vx *= 0.7;
+            if (mouseX < canvas.width / 3) {
+                gameState.player.vx = -5;
+            } else if (mouseX > (2 * canvas.width) / 3) {
+                gameState.player.vx = 5;
+                gameState.player.vx *= 0.8;
             }
         });
 
@@ -282,13 +272,11 @@
             const rect = canvas.getBoundingClientRect();
             const touchX = touch.clientX - rect.left;
 
-            const playerCenterX = gameState.player.x + PLAYER_WIDTH / 2;
-            const dx = touchX - playerCenterX;
-
-            if (Math.abs(dx) > 5) {
-                gameState.player.vx = Math.sign(dx) * 8;
-            } else {
-                gameState.player.vx *= 0.7;
+            if (touchX < canvas.width / 3) {
+                gameState.player.vx = -5;
+            } else if (touchX > (2 * canvas.width) / 3) {
+                gameState.player.vx = 5;
+                gameState.player.vx *= 0.8;
             }
             e.preventDefault();
         }, false);
@@ -400,37 +388,6 @@
             ctx.fill();
         }
 
-        function drawMouseCursor() {
-            const x = gameState.mouseX;
-            const y = gameState.mouseY;
-
-            // Outer circle
-            ctx.fillStyle = '#FF1493';
-            ctx.beginPath();
-            ctx.arc(x, y, 8, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Inner circle
-            ctx.fillStyle = '#FFFFFF';
-            ctx.beginPath();
-            ctx.arc(x, y, 4, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Crosshair lines
-            ctx.strokeStyle = '#FF1493';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(x - 12, y);
-            ctx.lineTo(x - 8, y);
-            ctx.moveTo(x + 8, y);
-            ctx.lineTo(x + 12, y);
-            ctx.moveTo(x, y - 12);
-            ctx.lineTo(x, y - 8);
-            ctx.moveTo(x, y + 8);
-            ctx.lineTo(x, y + 12);
-            ctx.stroke();
-        }
-
         function drawGame() {
             // Draw gradient background
             const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
@@ -504,9 +461,6 @@
             ctx.fill();
 
             ctx.restore();
-
-            // Draw mouse cursor on top
-            drawMouseCursor();
 
             // Draw UI
             document.getElementById('scoreDisplay').textContent = gameState.score;
